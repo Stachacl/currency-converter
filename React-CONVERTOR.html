@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        
+    <script src="https://unpkg.com/react@16/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    
+    <title>Converter</title> 
+    </head>
+    <body>
+        <div id="app"></div>
+        <script type="text/babel">
+// CS50 course - video of the tutorial Thinking in React 2019//
+
+            class App extends React.Component {
+
+                constructor(props) {
+                    super(props);
+                    this.curriencies = ["USD", "AUD", "CAD", "CNY", "EUR", "GBP"];
+                    this.cached = {},
+                    this.state = {
+                    base: "USD",
+                    other: "EUR",
+                    value: 0,
+                    converted: 0
+                    };
+                }
+
+                render() {
+                    return (
+                        <div>
+                            <div>
+                            <h1> Convert money </h1>  
+                            </div>
+
+                            <div>
+                              <select onChange={this.makeSelection} name="base" value={this.state.base}>
+                                {this.curriencies.map (currency => <option key={currency} value={currency}>{currency}</option>)}
+                              </select>
+                              <input value={this.state.value} onChange={this.changeValue}/>
+                            </div>
+
+                            <div>
+                              <select onChange={this.makeSelection} name="other" value={this.state.other}>
+                                {this.curriencies.map(currency => <option key={currency} value={currency}>{currency}</option>)}
+                              </select>
+                              <input disabled={true} value={this.state.converted === null? "calculating..." : this.state.converted} />
+                            </div>
+                        </div>
+                   );
+                }
+
+                makeSelection =  (event) => { //choose currency type
+                    this.setState({
+                        [event.target.name]: event.target.value
+                    }, this.recalculate); 
+                } 
+
+                changeValue = (event) => {
+                    this.setState({
+                        value: event.target.value,q1    
+                       converted: null
+                    }, this.recalculate);
+                }
+
+                recalculate = () => {
+                   const value = parseFloat(this.state.value) //treat this number as a Float (не округлять)
+                   if(isNaN(value)) {  //if the value is not a number - the return without calculation
+                    return;
+                   }
+
+                   if (this.cached[this.state.base] !== undefined && Date.now() - this.cached[this.state.base].timestamp < 1000 * 60) //time diffderense will return in miliseconds so 1000 * 60 is one minute. 
+                   {
+                    this.setState({
+                        converted: this.cached[this.state.base].rates[this.state.other] * value
+                    });
+                    return;
+                   }
+                            // link for excahne rates: https://api.exchangerate.host/latest?base=usd //
+                   fetch (`https://api.exchangerate.host/latest?base=${this.state.base}`)
+                   .then(response => response.json())
+                   .then(data => {
+                      this.cached[this.state.base] = { //store rates in the cache - so dont have to send request to the server each time
+                        rates: data.rates,
+                        timestamp: Date.now() //if last request is not longer than one minute (or any other time) before this request
+                      };
+                      this.setState({
+                      converted: data.rates[this.state.other] * value
+                      });
+                   });
+                }
+            }
+            
+            ReactDOM.render(<App />, document.querySelector("#app"));
+
+        </script>
+    </body>
+</html>
+
